@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather App - Experiment 5</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; background: #e0f2fe; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  .weather-card { background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+  h1 { color: #0369a1; margin-bottom: 20px; font-size: 24px; }
+  .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+  input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: inherit; }
+  button { padding: 10px 15px; background: #0369a1; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+  button:hover { background: #0284c7; }
+  .result { padding: 20px; border-radius: 8px; background: #f0f9ff; display: none; }
+  .result h2 { color: #333; margin-bottom: 10px; }
+  .temp { font-size: 40px; font-weight: bold; color: #0369a1; margin: 10px 0; }
+  .details { color: #555; font-size: 14px; margin: 5px 0; }
+  .error { color: #dc2626; font-weight: bold; display: none; margin-top: 10px; }
+</style>
+</head>
+<body>
+  <div class="weather-card">
+    <h1>Live Weather App</h1>
+    <div class="search-box">
+      <input type="text" id="cityInput" placeholder="Enter city name (e.g. Noida)">
+      <button onclick="getWeather()">Search</button>
+    </div>
+    <div id="errorMsg" class="error">City not found. Please try again.</div>
+    <div id="weatherResult" class="result">
+      <h2 id="cityName"></h2>
+      <div class="temp" id="temp"></div>
+      <div class="details" id="wind"></div>
+      <div class="details" id="weatherCode"></div>
+    </div>
+  </div>
+
+<script>
+  async function getWeather() {
+    const city = document.getElementById("cityInput").value.trim();
+    const resultDiv = document.getElementById("weatherResult");
+    const errorDiv = document.getElementById("errorMsg");
+    
+    if (city === "") {
+      alert("Please enter a city name.");
+      return;
+    }
+
+    resultDiv.style.display = "none";
+    errorDiv.style.display = "none";
+
+    try {
+      // Step 1: Get Latitude and Longitude for the city
+      const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1&language=en&format=json`;
+      const geoResponse = await fetch(geoUrl);
+      const geoData = await geoResponse.json();
+
+      if (!geoData.results || geoData.results.length === 0) {
+        errorDiv.style.display = "block";
+        return;
+      }
+
+      const lat = geoData.results[0].latitude;
+      const lon = geoData.results[0].longitude;
+      const actualCityName = geoData.results[0].name;
+      const country = geoData.results[0].country;
+
+      // Step 2: Fetch Weather using Latitude and Longitude
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
+      const weatherResponse = await fetch(weatherUrl);
+      const weatherData = await weatherResponse.json();
+
+      // Step 3: Display Data
+      document.getElementById("cityName").textContent = `${actualCityName}, ${country}`;
+      document.getElementById("temp").textContent = `${weatherData.current_weather.temperature}°C`;
+      document.getElementById("wind").textContent = `Wind Speed: ${weatherData.current_weather.windspeed} km/h`;
+      document.getElementById("weatherCode").textContent = `Weather Code: ${weatherData.current_weather.weathercode}`;
+      
+      resultDiv.style.display = "block";
+
+    } catch (error) {
+      alert("An error occurred while fetching the weather data. Please check your internet connection.");
+      console.error(error);
+    }
+  }
+</script>
+</body>
+</html>
